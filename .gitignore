@@ -1,5 +1,4 @@
 .idea/
-
 .vs/
 *.suo
 *.csproj.user
@@ -10,3 +9,4 @@ packages/
 **/Properties/*.p12
 Weights/
 # Local
+bin/**

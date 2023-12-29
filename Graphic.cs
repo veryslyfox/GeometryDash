@@ -1,14 +1,40 @@
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
+using System.Windows;
+struct Int32Point
+{
+    public Int32Point(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+    public static Int32Point operator -(Int32Point a, Int32Point b)
+    {
+        return new(a.X - b.X, a.Y - b.Y);
+    }
+    public int X { get; }
+    public int Y { get; }
+}
+struct Triangle
+{
+    public Triangle(Int32Point a, Int32Point b, Int32Point c)
+    {
+        A = a;
+        B = b;
+        C = c;
+    }
 
+    public Int32Point A { get; }
+    public Int32Point B { get; }
+    public Int32Point C { get; }
+}
 struct Rectangle
 {
     public static Rectangle Create(int x, int y, int width, int height)
     {
-        return new(x, y, x + width, y + height);
+        return new(x, x + width, y, y + height);
     }
-    public Rectangle(int x1, int x2, int y1, int y2)
+    public Rectangle(int x1, int y1, int x2, int y2)
     {
         X1 = x1;
         X2 = x2;
@@ -16,12 +42,10 @@ struct Rectangle
         Y2 = y2;
     }
 
-    public int X1 { get; }
-    public int Y1 { get; }
-    public int Width { get; }
-    public int Height { get; }
-    public int X2 { get; }
-    public int Y2 { get; }
+    public int X1 { get; set; }
+    public int Y1 { get; set; }
+    public int X2 { get; set; }
+    public int Y2 { get; set; }
     public static Rectangle? operator &(Rectangle left, Rectangle right)
     {
         var x1 = 0;
@@ -82,9 +106,27 @@ struct Rectangle
         }
         return new Rectangle(x1, x2, y1, y2);
     }
+    public static bool operator ==(Rectangle left, Rectangle right)
+    {
+        return (left.X1 == right.X1) &
+        (left.X2 == right.X2) &
+        (left.Y1 == right.Y1) &
+        (left.Y2 == right.Y2);
+    } 
+    public static bool operator !=(Rectangle left, Rectangle right)
+    {
+        return !(left == right);
+    } 
     public bool In(int x, int y)
     {
         return x < X2 & x > X1 & y < Y2 & y > Y1;
+    }
+    public void Move(int x, int y)
+    {
+        X1 += x;
+        X2 += x;
+        Y1 += y;
+        Y2 += y;
     }
 }
 class Graphic
@@ -92,18 +134,7 @@ class Graphic
     public Graphic(WriteableBitmap bitmap)
     {
         Bitmap = bitmap;
-        InitPointers();
-
     }
-    void InitPointers()
-    {
-        Pointers = new int[Bitmap.PixelHeight];
-        for (int i = 0; i < Bitmap.PixelHeight; i++)
-        {
-            Pointers[i] = Bitmap.BackBufferStride * i;
-        }
-    }
-    int[] Pointers = null!;
     public WriteableBitmap Bitmap { get; }
     public unsafe void DrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
     {
@@ -118,18 +149,110 @@ class Graphic
             }
         }
     }
-    public void DrawRectangle(Rectangle rectangle, int color)
+    public void SafeDrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
     {
-        for (int y = rectangle.Y1; y < rectangle.Y2; y++)
+        var bitmapRectangle = new Rectangle(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight);
+        var newRectangle = rectangle & bitmapRectangle;
+        if (newRectangle == null)
         {
-            for (int x = rectangle.X1; x < rectangle.X2; x++)
-            {
-                var ptr = Bitmap.BackBuffer + x * 4 + Pointers[y];
-                unsafe
-                {
-                    *((int*)ptr) = color;
-                }
-            }
+            return;
         }
+        DrawRectangle(newRectangle.Value, r, g, b);
+    }
+    public unsafe void DrawTopTriangle(Int32Point basePoint, double delta1, double delta2, int triangleHeight, byte r, byte g, byte b)
+    {
+        var color = (r << 16) | (g << 8) | b;
+        if (delta1 > delta2)
+        {
+            (delta1, delta2) = (delta2, delta1);
+        }
+        var rowStart = (double)basePoint.X;
+        var rowEnd = (double)basePoint.X;
+        for (int y = basePoint.Y; y <= basePoint.Y + triangleHeight; y++)
+        {
+            for (int x = (int)rowStart; x < (int)rowEnd; x++)
+            {
+                var ptr = x * 4 + Bitmap.BackBuffer + Bitmap.BackBufferStride * y;
+                *(int*)ptr = color;
+            }
+            rowStart += delta1;
+            rowEnd += delta2;
+        }
+    }
+    public unsafe void DrawBottomTriangle(Int32Point basePoint, double delta1, double delta2, int triangleHeight, byte r, byte g, byte b)
+    {
+        var color = (r << 16) | (g << 8) | b;
+        delta1 = -delta1;
+        delta2 = -delta2;
+        if (delta1 > delta2)
+        {
+            (delta1, delta2) = (delta2, delta1);
+        }
+        var rowStart = (double)basePoint.X;
+        var rowEnd = (double)basePoint.X;
+        for (int y = basePoint.Y; y > basePoint.Y - triangleHeight; y--)
+        {
+            for (int x = (int)rowStart; x < (int)rowEnd; x++)
+            {
+                var ptr = x * 4 + Bitmap.BackBuffer + Bitmap.BackBufferStride * y;
+                *(int*)ptr = color;
+            }
+            rowStart += delta1;
+            rowEnd += delta2;
+        }
+    }
+    public unsafe void DrawTriangle(Triangle triangle, byte r, byte g, byte b)
+    {
+        double GetDelta(Int32Point point)
+        {
+            return (double)point.X / point.Y;
+        }
+        var ay = triangle.A.Y;
+        var by = triangle.B.Y;
+        var cy = triangle.C.Y;
+        var upper = triangle.A;
+        var middle = triangle.B;
+        var lower = triangle.C;
+        var uy = upper.Y;
+        var my = middle.Y;
+        var ly = lower.Y;
+        if (uy > my)
+        {
+            (uy, my) = (my, uy);
+            (upper, middle) = (middle, upper);
+        }
+        if (my > ly)
+        {
+            (my, ly) = (ly, my);
+            (middle, lower) = (lower, middle);
+        }
+        if (uy > my)
+        {
+            (uy, my) = (my, uy);
+            (upper, middle) = (middle, upper);
+        }
+        if (my > ly)
+        {
+            (my, ly) = (ly, my);
+            (middle, lower) = (lower, middle);
+        }
+        var topTriangleHeight = (middle.Y - upper.Y);
+        var bottomTriangleHeight = (lower.Y - middle.Y);
+        if (topTriangleHeight != 0)
+        {
+            DrawTopTriangle(upper, GetDelta(middle - upper), GetDelta(lower - upper), topTriangleHeight, r, g, b);
+        }
+        if (bottomTriangleHeight != 0)
+        {
+            DrawBottomTriangle(lower, GetDelta(middle - lower), GetDelta(upper - lower), bottomTriangleHeight, r, g, b);
+        }
+    }
+    public unsafe void Clear()
+    {
+        NativeMemory.Fill((void*)(Bitmap.BackBuffer), (nuint)(Bitmap.BackBufferStride * Bitmap.PixelHeight), 0);
+    }
+    public void Fill(byte r, byte g, byte b)
+    {
+        DrawRectangle(new Rectangle(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight), r, g, b);
     }
 }
