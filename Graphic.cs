@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 
 struct Rectangle
@@ -91,17 +92,39 @@ class Graphic
     public Graphic(WriteableBitmap bitmap)
     {
         Bitmap = bitmap;
-    }
+        InitPointers();
 
+    }
+    void InitPointers()
+    {
+        Pointers = new int[Bitmap.PixelHeight];
+        for (int i = 0; i < Bitmap.PixelHeight; i++)
+        {
+            Pointers[i] = Bitmap.BackBufferStride * i;
+        }
+    }
+    int[] Pointers = null!;
     public WriteableBitmap Bitmap { get; }
-    public void DrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
+    public unsafe void DrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
     {
         var color = (r << 16) | (g << 8) | b;
         for (int y = rectangle.Y1; y < rectangle.Y2; y++)
         {
+            for (int* ptr = (int*)(Bitmap.BackBuffer + Bitmap.BackBufferStride * y) + rectangle.X1, eptr = ptr - rectangle.X1 + rectangle.X2;
+             ptr != eptr;
+              ++ptr)
+            {
+                *ptr = color;
+            }
+        }
+    }
+    public void DrawRectangle(Rectangle rectangle, int color)
+    {
+        for (int y = rectangle.Y1; y < rectangle.Y2; y++)
+        {
             for (int x = rectangle.X1; x < rectangle.X2; x++)
             {
-                var ptr = Bitmap.BackBuffer + x * 4 + Bitmap.BackBufferStride * y;
+                var ptr = Bitmap.BackBuffer + x * 4 + Pointers[y];
                 unsafe
                 {
                     *((int*)ptr) = color;
