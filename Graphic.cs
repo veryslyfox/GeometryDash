@@ -128,6 +128,32 @@ struct Rectangle
         Y1 += y;
         Y2 += y;
     }
+    public static explicit operator Rectangle(FloatRectangle rectangle)
+    {
+        return new((int)rectangle.X1, (int)rectangle.Y1, (int)rectangle.X2, (int)rectangle.Y2);
+    }
+}
+struct FloatRectangle
+{
+    public FloatRectangle(double x1, double y1, double x2, double y2)
+    {
+        X1 = x1;
+        Y1 = y1;
+        X2 = x2;
+        Y2 = y2;
+    }
+
+    public double X1 { get; set; }
+    public double X2 { get; set; }
+    public double Y1 { get; set; }
+    public double Y2 { get; set; }
+    public void Move(double x, double y)
+    {
+        X1 += x;
+        X2 += x;
+        Y1 += y;
+        Y2 += y;
+    }
 }
 class Graphic
 {

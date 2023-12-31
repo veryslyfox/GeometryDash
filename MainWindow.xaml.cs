@@ -28,7 +28,9 @@ public partial class MainWindow : Window
     private int _q;
     private Graphic _graphic;
     private long _startTime;
-    private Rectangle _rectangle = new(350, 350, 450, 450);
+    private FloatRectangle _rectangle = new(350, 350, 450, 450);
+    private double _moveX;
+    private double _moveY;
     public MainWindow()
     {
         InitializeComponent();
@@ -45,20 +47,20 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
-        _graphic.DrawRectangle(_rectangle, 255, 0, 255);
+        _graphic.DrawRectangle((Rectangle)_rectangle, 255, 0, 255);
         _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
         _bitmap.Unlock();
-        if (_f < 100)
+        _rectangle.Move(_moveX, _moveY);
+        var time = Stopwatch.GetTimestamp();
+        var diff = time - _startTime;
+        if (diff > Stopwatch.Frequency * 0.1)
         {
-            _rectangle.Move(1, 0);
-        }
-        else if (_f < 200)
-        {
-            _rectangle.Move(-1, 1);
+            _startTime = time;
+            var alpha = _rng.NextDouble() * Math.Tau;
+            _moveX = Math.Sin(alpha) * 2;
+            _moveY = Math.Cos(alpha) * 2;
         }
         _f++;
-        //var time = Stopwatch.GetTimestamp();
-        // var diff = time - _startTime;
         // if (diff > Stopwatch.Frequency)
         // {
         //     var seconds = (double)diff / Stopwatch.Frequency;
