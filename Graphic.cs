@@ -32,7 +32,7 @@ struct Rectangle
 {
     public static Rectangle Create(int x, int y, int width, int height)
     {
-        return new(x, x + width, y, y + height);
+        return new(x, y, x + width, y + height);
     }
     public Rectangle(int x1, int y1, int x2, int y2)
     {
@@ -104,7 +104,7 @@ struct Rectangle
                 return null;
             }
         }
-        return new Rectangle(x1, x2, y1, y2);
+        return new Rectangle(x1, y1, x2, y2);
     }
     public static bool operator ==(Rectangle left, Rectangle right)
     {

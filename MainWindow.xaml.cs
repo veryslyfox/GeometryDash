@@ -47,7 +47,7 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
-        _graphic.DrawRectangle((Rectangle)_rectangle, 255, 0, 255);
+        _graphic.SafeDrawRectangle((Rectangle)_rectangle, 255, 0, 255);
         _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
         _bitmap.Unlock();
         _rectangle.Move(_moveX, _moveY);
