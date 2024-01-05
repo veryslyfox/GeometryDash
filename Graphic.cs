@@ -28,7 +28,9 @@ struct Triangle
     public Int32Point B { get; }
     public Int32Point C { get; }
 }
+#pragma warning disable
 struct Rectangle
+#pragma warning enable
 {
     public static Rectangle Create(int x, int y, int width, int height)
     {
@@ -78,8 +80,8 @@ struct Rectangle
         }
         var y1 = 0;
         var y2 = 0;
-        var v3 = left.X1 < right.X2;
-        var v4 = left.X2 < right.X1;
+        var v3 = left.Y1 < right.Y2;
+        var v4 = left.Y2 < right.Y1;
         if (v3)
         {
             if (v4)
@@ -104,7 +106,7 @@ struct Rectangle
                 return null;
             }
         }
-        return new Rectangle(x1, y1, x2, y2);
+        return new Rectangle(x2, y2, x1, y1);
     }
     public static bool operator ==(Rectangle left, Rectangle right)
     {
@@ -112,14 +114,14 @@ struct Rectangle
         (left.X2 == right.X2) &
         (left.Y1 == right.Y1) &
         (left.Y2 == right.Y2);
-    } 
+    }
     public static bool operator !=(Rectangle left, Rectangle right)
     {
         return !(left == right);
-    } 
+    }
     public bool In(int x, int y)
     {
-        return x < X2 & x > X1 & y < Y2 & y > Y1;
+        return x <= X2 & x >= X1 & y <= Y2 & y >= Y1;
     }
     public void Move(int x, int y)
     {
@@ -127,10 +129,6 @@ struct Rectangle
         X2 += x;
         Y1 += y;
         Y2 += y;
-    }
-    public static explicit operator Rectangle(FloatRectangle rectangle)
-    {
-        return new((int)rectangle.X1, (int)rectangle.Y1, (int)rectangle.X2, (int)rectangle.Y2);
     }
 }
 struct FloatRectangle

@@ -47,20 +47,22 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
-        _graphic.SafeDrawRectangle((Rectangle)_rectangle, 255, 0, 255);
+        var color = HsvToRgb(_f/2 + 1000, 255, 255);
+        _graphic.DrawRectangle(new Rectangle(350 - _f/10, 350 - _f/10, 450 + _f/10, 450 + _f/10), color.R, color.G, color.B);
         _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
         _bitmap.Unlock();
-        _rectangle.Move(_moveX, _moveY);
-        var time = Stopwatch.GetTimestamp();
-        var diff = time - _startTime;
-        if (diff > Stopwatch.Frequency * 0.1)
-        {
-            _startTime = time;
-            var alpha = _rng.NextDouble() * Math.Tau;
-            _moveX = Math.Sin(alpha) * 2;
-            _moveY = Math.Cos(alpha) * 2;
-        }
-        _f++;
+        _f += _rng.Next(2) * 48 - 24;
+        // _rectangle.Move(_moveX, _moveY);
+        // var time = Stopwatch.GetTimestamp();
+        // var diff = time - _startTime;
+        // if (diff > Stopwatch.Frequency * 0.1)
+        // {
+        //     _startTime = time;
+        //     var alpha = _rng.NextDouble() * Math.Tau;
+        //     _moveX = Math.Sin(alpha) * 2;
+        //     _moveY = Math.Cos(alpha) * 2;
+        // }
+        // _f++;
         // if (diff > Stopwatch.Frequency)
         // {
         //     var seconds = (double)diff / Stopwatch.Frequency;
@@ -97,5 +99,51 @@ public partial class MainWindow : Window
         // _f++;
         // _bitmap.AddDirtyRect(new(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight));
         // _bitmap.Unlock();
+    }
+    public Color HsvToRgb(int h, byte s, byte v)
+    {
+        var result = new Color();
+        var hue = h % 360;
+        var hv = (hue % 60) * 255 / 60;
+        var a = 0;
+        var b = hv;
+        var c = 255 - hv;
+        var d = 255;
+        void DoubleInterval(int min, int max, int r, int g, int b)
+        {
+            if (min <= hue && max > hue)
+            {
+                result = Normalize(FromRgb(r, g, b), v);
+            }
+        }
+        DoubleInterval(0, 60, d, b, a);
+        DoubleInterval(60, 120, c, d, a);
+        DoubleInterval(120, 180, a, d, b);
+        DoubleInterval(180, 240, a, c, d);
+        DoubleInterval(240, 300, b, a, d);
+        DoubleInterval(300, 360, d, a, c);
+        return Interpolation(result, Color.FromRgb(v, v, v), s);
+    }
+    public Color Interpolation(Color a, Color b, byte c)
+    {
+        return FromRgb((a.R * c + b.R * (255 - c)) / 255, (a.G * c + b.G * (255 - c)) / 255, (a.B * c + b.B * (255 - c)) / 255);
+    }
+    private Color FromRgb(int r, int g, int b)
+    {
+        return Color.FromRgb(((byte)(r & 255)), ((byte)(g & 255)), ((byte)(b & 255)));
+    }
+    public Color Normalize(Color color, byte lightness)
+    {
+        var r = color.R;
+        var g = color.G;
+        var b = color.B;
+        var max = Math.Max(r, Math.Max(g, b));
+        if (max == 0)
+        {
+            return Color.FromRgb(lightness, lightness, lightness);
+        }
+        var normalizer = (double)lightness / max;
+        return Color.FromRgb((byte)(r * normalizer), ((byte)(g * normalizer)), ((byte)(b * normalizer)));
+
     }
 }
