@@ -12,21 +12,31 @@ struct Int32Point
     {
         return new(a.X - b.X, a.Y - b.Y);
     }
+    public static Int32Point operator +(Int32Point a, Int32Point b)
+    {
+        return new(a.X + b.X, a.Y + b.Y);
+    }
     public int X { get; }
     public int Y { get; }
 }
 struct Triangle
 {
-    public Triangle(Int32Point a, Int32Point b, Int32Point c)
+    public Triangle(Int32Point a, Int32Point b, Int32Point c, byte red, byte green, byte blue)
     {
         A = a;
         B = b;
         C = c;
+        Red = red;
+        Green = green;
+        Blue = blue;
     }
 
     public Int32Point A { get; }
     public Int32Point B { get; }
     public Int32Point C { get; }
+    public byte Red { get; }
+    public byte Green { get; }
+    public byte Blue { get; }
 }
 #pragma warning disable
 struct Rectangle
@@ -48,7 +58,7 @@ struct Rectangle
     public int Y1 { get; set; }
     public int X2 { get; set; }
     public int Y2 { get; set; }
-    public static Rectangle? operator &(Rectangle left, Rectangle right)
+    public static Rectangle operator &(Rectangle left, Rectangle right)
     {
         var x1 = 0;
         var x2 = 0;
@@ -58,7 +68,7 @@ struct Rectangle
         {
             if (v2)
             {
-                return null;
+                return default;
             }
             else
             {
@@ -75,7 +85,7 @@ struct Rectangle
             }
             else
             {
-                return null;
+                return default;
             }
         }
         var y1 = 0;
@@ -86,7 +96,7 @@ struct Rectangle
         {
             if (v4)
             {
-                return null;
+                return default;
             }
             else
             {
@@ -103,7 +113,7 @@ struct Rectangle
             }
             else
             {
-                return null;
+                return default;
             }
         }
         return new Rectangle(x2, y2, x1, y1);
@@ -181,7 +191,7 @@ class Graphic
         {
             return;
         }
-        DrawRectangle(newRectangle.Value, r, g, b);
+        DrawRectangle(newRectangle, r, g, b);
     }
     public unsafe void DrawTopTriangle(Int32Point basePoint, double delta1, double delta2, int triangleHeight, byte r, byte g, byte b)
     {
@@ -202,6 +212,10 @@ class Graphic
             rowStart += delta1;
             rowEnd += delta2;
         }
+    }
+    public unsafe void DrawCircle(int xCenter, int yCenter, int radius, byte r, byte g, byte b)
+    {
+        
     }
     public unsafe void DrawBottomTriangle(Int32Point basePoint, double delta1, double delta2, int triangleHeight, byte r, byte g, byte b)
     {

@@ -29,8 +29,6 @@ public partial class MainWindow : Window
     private Graphic _graphic;
     private long _startTime;
     private FloatRectangle _rectangle = new(350, 350, 450, 450);
-    private double _moveX;
-    private double _moveY;
     public MainWindow()
     {
         InitializeComponent();
@@ -47,11 +45,11 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
-        var color = HsvToRgb(_f/2 + 1000, 255, 255);
-        _graphic.DrawRectangle(new Rectangle(350 - _f/10, 350 - _f/10, 450 + _f/10, 450 + _f/10), color.R, color.G, color.B);
-        _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
-        _bitmap.Unlock();
-        _f += _rng.Next(2) * 48 - 24;
+        DrawFractal(new(new(200, 600), new(600, 600), new(400, 253), 0, 0, 0), 8);
+        // _graphic.DrawRectangle(new Rectangle(_rng.Next(500), _rng.Next(500), _rng.Next(500) + 500, _rng.Next(500) + 500) & new Rectangle(0, 0, 1000, 1000), color.R, color.G, color.B);
+        // _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
+        // _bitmap.Unlock();
+        // _f += _rng.Next(2) * 48 - 24;
         // _rectangle.Move(_moveX, _moveY);
         // var time = Stopwatch.GetTimestamp();
         // var diff = time - _startTime;
@@ -96,9 +94,24 @@ public partial class MainWindow : Window
         //         }
         //     }
         // }
-        // _f++;
-        // _bitmap.AddDirtyRect(new(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight));
-        // _bitmap.Unlock();
+        _f++;
+        _bitmap.AddDirtyRect(new(0, 0, _bitmap.PixelWidth, _bitmap.PixelHeight));
+        _bitmap.Unlock();
+    }
+    void DrawFractal(Triangle triangle, int depth)
+    {
+        if (depth == 0)
+        {
+            return;
+        }
+        var color = HsvToRgb(depth * 30, 255, 255);
+        _graphic.DrawTriangle(triangle, color.R, color.G, color.B);
+        var middlePoint1 = new Int32Point((triangle.A.X + triangle.B.X) / 2, (triangle.A.Y + triangle.B.Y) / 2);
+        var middlePoint2 = new Int32Point((triangle.A.X + triangle.C.X) / 2, (triangle.A.Y + triangle.C.Y) / 2);
+        var middlePoint3 = new Int32Point((triangle.B.X + triangle.C.X) / 2, (triangle.B.Y + triangle.C.Y) / 2);
+        DrawFractal(new(triangle.A, middlePoint1, middlePoint2, color.R, color.G, color.B), depth - 1);
+        DrawFractal(new(triangle.B, middlePoint1, middlePoint3, color.R, color.G, color.B), depth - 1);
+        DrawFractal(new(triangle.C, middlePoint2, middlePoint3, color.R, color.G, color.B), depth - 1);
     }
     public Color HsvToRgb(int h, byte s, byte v)
     {
