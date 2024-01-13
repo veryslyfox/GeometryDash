@@ -72,8 +72,8 @@ struct Rectangle
             }
             else
             {
-                x1 = right.X2;
-                x2 = left.X1;
+                x1 = right.X1;
+                x2 = left.X2;
             }
         }
         else
@@ -88,6 +88,16 @@ struct Rectangle
                 return default;
             }
         }
+        if((left.X1 < right.X1) & (left.X2 > right.X2))
+        {
+            x1 = right.X1;
+            x2 = right.X2;
+        }
+        if((left.X1 > right.X1) & (left.X2 < right.X2))
+        {
+            x1 = left.X1;
+            x2 = left.X2;
+        }
         var y1 = 0;
         var y2 = 0;
         var v3 = left.Y1 < right.Y2;
@@ -100,8 +110,8 @@ struct Rectangle
             }
             else
             {
-                y1 = right.Y2;
-                y2 = left.Y1;
+                y1 = right.Y1;
+                y2 = left.Y2;
             }
         }
         else
@@ -116,7 +126,17 @@ struct Rectangle
                 return default;
             }
         }
-        return new Rectangle(x2, y2, x1, y1);
+        if((left.Y1 < right.Y1) & (left.Y2 > right.Y2))
+        {
+            y1 = right.Y1;
+            y2 = right.Y2;
+        }
+        if((left.Y1 > right.Y1) & (left.Y2 < right.Y2))
+        {
+            y1 = left.Y1;
+            y2 = left.Y2;
+        }
+        return new Rectangle(x1, y1, x2, y2);
     }
     public static bool operator ==(Rectangle left, Rectangle right)
     {
@@ -133,12 +153,9 @@ struct Rectangle
     {
         return x <= X2 & x >= X1 & y <= Y2 & y >= Y1;
     }
-    public void Move(int x, int y)
+    public Rectangle Move(int x, int y)
     {
-        X1 += x;
-        X2 += x;
-        Y1 += y;
-        Y2 += y;
+        return new(X1 + x, Y1 + y, X2 + x, Y2 + y);
     }
 }
 struct FloatRectangle
@@ -155,12 +172,93 @@ struct FloatRectangle
     public double X2 { get; set; }
     public double Y1 { get; set; }
     public double Y2 { get; set; }
-    public void Move(double x, double y)
+    public FloatRectangle Move(double x, double y)
     {
-        X1 += x;
-        X2 += x;
-        Y1 += y;
-        Y2 += y;
+        return new(X1 + x, Y1 + y, X2 + x, Y2 + y);
+    }
+    public static FloatRectangle operator &(FloatRectangle left, FloatRectangle right)
+    {
+        var x1 = 0.0;
+        var x2 = 0.0;
+        var v1 = left.X1 < right.X2;
+        var v2 = left.X2 < right.X1;
+        if (v1)
+        {
+            if (v2)
+            {
+                return default;
+            }
+            else
+            {
+                x1 = right.X1;
+                x2 = left.X2;
+            }
+        }
+        else
+        {
+            if (v2)
+            {
+                x1 = left.X1;
+                x2 = right.X2;
+            }
+            else
+            {
+                return default;
+            }
+        }
+        if((left.X1 < right.X1) & (left.X2 > right.X2))
+        {
+            x1 = right.X1;
+            x2 = right.X2;
+        }
+        if((left.X1 > right.X1) & (left.X2 < right.X2))
+        {
+            x1 = left.X1;
+            x2 = left.X2;
+        }
+        var y1 = 0.0;
+        var y2 = 0.0;
+        var v3 = left.Y1 < right.Y2;
+        var v4 = left.Y2 < right.Y1;
+        if (v3)
+        {
+            if (v4)
+            {
+                return default;
+            }
+            else
+            {
+                y1 = right.Y1;
+                y2 = left.Y2;
+            }
+        }
+        else
+        {
+            if (v4)
+            {
+                y1 = left.Y1;
+                y2 = right.Y2;
+            }
+            else
+            {
+                return default;
+            }
+        }
+        if((left.Y1 < right.Y1) & (left.Y2 > right.Y2))
+        {
+            y1 = right.Y1;
+            y2 = right.Y2;
+        }
+        if((left.Y1 > right.Y1) & (left.Y2 < right.Y2))
+        {
+            y1 = left.Y1;
+            y2 = left.Y2;
+        }
+        return new(x1, y1, x2, y2);
+    }
+    public static bool IsCollide(FloatRectangle left, FloatRectangle right)
+    {
+        return ((left.X1 < right.X2) ^ (left.X2 > right.X2)) & ((left.Y1 < right.Y2) ^ (left.Y2 > right.Y2));
     }
 }
 class Graphic

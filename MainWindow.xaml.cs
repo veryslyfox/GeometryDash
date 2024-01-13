@@ -29,6 +29,8 @@ public partial class MainWindow : Window
     private Graphic _graphic;
     private long _startTime;
     private FloatRectangle _rectangle = new(350, 350, 450, 450);
+    private Map _map;
+    private Player _player;
     public MainWindow()
     {
         InitializeComponent();
@@ -45,7 +47,12 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
-        DrawFractal(new(new(200, 600), new(600, 600), new(400, 253), 0, 0, 0), 8);
+        // DrawFractal(new(new(250, 600), new(750, 600), new(500, 166), 0, 0, 0), 9);
+        _graphic.SafeDrawRectangle(new())
+        foreach (var obj in _map.Objects)
+        {
+            _graphic.SafeDrawRectangle(new((int)obj.Rectangle.X1, (int)obj.Rectangle.Y1, (int)obj.Rectangle.X2, (int)obj.Rectangle.Y2), obj.R, obj.G, obj.B);
+        }
         // _graphic.DrawRectangle(new Rectangle(_rng.Next(500), _rng.Next(500), _rng.Next(500) + 500, _rng.Next(500) + 500) & new Rectangle(0, 0, 1000, 1000), color.R, color.G, color.B);
         // _bitmap.AddDirtyRect(new Int32Rect(0, 0, 1000, 1000));
         // _bitmap.Unlock();
@@ -112,6 +119,31 @@ public partial class MainWindow : Window
         DrawFractal(new(triangle.A, middlePoint1, middlePoint2, color.R, color.G, color.B), depth - 1);
         DrawFractal(new(triangle.B, middlePoint1, middlePoint3, color.R, color.G, color.B), depth - 1);
         DrawFractal(new(triangle.C, middlePoint2, middlePoint3, color.R, color.G, color.B), depth - 1);
+    }
+    void DrawFractal2(Rectangle rectangle, int depth)
+    {
+        if (depth == 0)
+        {
+            return;
+        }
+        var color = HsvToRgb(depth * 30, 255, 255);
+        var x1 = rectangle.X1;
+        var x2 = rectangle.X2;
+        var y1 = rectangle.Y1;
+        var y2 = rectangle.Y2;
+        var xMin = (int)(rectangle.X1 * 0.666 + rectangle.X2 * 0.333);
+        var xMax = (int)(rectangle.X1 * 0.333 + rectangle.X2 * 0.666);
+        var yMin = (int)(rectangle.Y1 * 0.666 + rectangle.Y2 * 0.333);
+        var yMax = (int)(rectangle.Y1 * 0.333 + rectangle.Y2 * 0.666);
+        _graphic.DrawRectangle(new(xMin, xMax, yMin, yMax), color.R, color.G, color.B);
+        DrawFractal2(new(x1, y1, xMin, yMin), depth - 1);
+        DrawFractal2(new(xMin, y1, xMax, yMin), depth - 1);
+        DrawFractal2(new(xMax, y1, x2, yMin), depth - 1);
+        DrawFractal2(new(x1, yMin, xMin, yMax), depth - 1);
+        DrawFractal2(new(xMax, yMin, x2, yMax), depth - 1);
+        DrawFractal2(new(x1, y1, xMin, yMin), depth - 1);
+        DrawFractal2(new(x1, y1, xMin, yMin), depth - 1);
+        DrawFractal2(new(x1, y1, xMin, yMin), depth - 1);
     }
     public Color HsvToRgb(int h, byte s, byte v)
     {
