@@ -1,4 +1,4 @@
 static class Test
 {
-    public static bool Value = true;
+    public static bool IsTest = true;
 }

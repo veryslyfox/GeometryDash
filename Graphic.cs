@@ -58,85 +58,38 @@ struct Rectangle
     public int Y1 { get; set; }
     public int X2 { get; set; }
     public int Y2 { get; set; }
+    public static explicit operator Rectangle(FloatRectangle rectangle)
+    {
+        return new((int)rectangle.X1, (int)rectangle.Y1, (int)rectangle.X2, (int)rectangle.Y2);
+    }
     public static Rectangle operator &(Rectangle left, Rectangle right)
     {
-        var x1 = 0;
-        var x2 = 0;
-        var v1 = left.X1 < right.X2;
-        var v2 = left.X2 < right.X1;
-        if (v1)
+        var x = GetIntersection(left.X1, left.X2, right.X1, right.X2);
+        var y = GetIntersection(left.Y1, left.Y2, right.Y1, right.Y2);
+        return new(x.Item1, y.Item1, x.Item2, y.Item2);
+    }
+    public static (int, int) GetIntersection(int a1, int a2, int b1, int b2)
+    {
+        if (a1 > b1)
         {
-            if (v2)
-            {
-                return default;
-            }
-            else
-            {
-                x1 = right.X1;
-                x2 = left.X2;
-            }
+            (a1, a2, b1, b2) = (b1, b2, a1, a2);
         }
-        else
+        if (a2 <= b1)
         {
-            if (v2)
-            {
-                x1 = left.X1;
-                x2 = right.X2;
-            }
-            else
-            {
-                return default;
-            }
-        }
-        if((left.X1 < right.X1) & (left.X2 > right.X2))
+            return (0, 0);
+        }        
+        if(a1 <= b1 && a2 >= b2)
         {
-            x1 = right.X1;
-            x2 = right.X2;
+            return (b1, b2);
         }
-        if((left.X1 > right.X1) & (left.X2 < right.X2))
-        {
-            x1 = left.X1;
-            x2 = left.X2;
-        }
-        var y1 = 0;
-        var y2 = 0;
-        var v3 = left.Y1 < right.Y2;
-        var v4 = left.Y2 < right.Y1;
-        if (v3)
-        {
-            if (v4)
-            {
-                return default;
-            }
-            else
-            {
-                y1 = right.Y1;
-                y2 = left.Y2;
-            }
-        }
-        else
-        {
-            if (v4)
-            {
-                y1 = left.Y1;
-                y2 = right.Y2;
-            }
-            else
-            {
-                return default;
-            }
-        }
-        if((left.Y1 < right.Y1) & (left.Y2 > right.Y2))
-        {
-            y1 = right.Y1;
-            y2 = right.Y2;
-        }
-        if((left.Y1 > right.Y1) & (left.Y2 < right.Y2))
-        {
-            y1 = left.Y1;
-            y2 = left.Y2;
-        }
-        return new Rectangle(x1, y1, x2, y2);
+        return (b1, a2);
+    }
+    
+    enum IntersectionType
+    {
+        None,
+        Contain,
+        Partial
     }
     public static bool operator ==(Rectangle left, Rectangle right)
     {
@@ -206,12 +159,12 @@ struct FloatRectangle
                 return default;
             }
         }
-        if((left.X1 < right.X1) & (left.X2 > right.X2))
+        if ((left.X1 < right.X1) & (left.X2 > right.X2))
         {
             x1 = right.X1;
             x2 = right.X2;
         }
-        if((left.X1 > right.X1) & (left.X2 < right.X2))
+        if ((left.X1 > right.X1) & (left.X2 < right.X2))
         {
             x1 = left.X1;
             x2 = left.X2;
@@ -244,12 +197,12 @@ struct FloatRectangle
                 return default;
             }
         }
-        if((left.Y1 < right.Y1) & (left.Y2 > right.Y2))
+        if ((left.Y1 < right.Y1) & (left.Y2 > right.Y2))
         {
             y1 = right.Y1;
             y2 = right.Y2;
         }
-        if((left.Y1 > right.Y1) & (left.Y2 < right.Y2))
+        if ((left.Y1 > right.Y1) & (left.Y2 < right.Y2))
         {
             y1 = left.Y1;
             y2 = left.Y2;
@@ -258,7 +211,7 @@ struct FloatRectangle
     }
     public static bool IsCollide(FloatRectangle left, FloatRectangle right)
     {
-        return ((left.X1 < right.X2) ^ (left.X2 > right.X2)) & ((left.Y1 < right.Y2) ^ (left.Y2 > right.Y2));
+        return ((left.X1 < right.X2) == (left.X1 > right.X2)) & ((left.Y1 < right.Y2) == (left.Y2 > right.Y1));
     }
 }
 class Graphic
@@ -313,7 +266,18 @@ class Graphic
     }
     public unsafe void DrawCircle(int xCenter, int yCenter, int radius, byte r, byte g, byte b)
     {
-        
+        var color = (r << 16) | (g << 8) | b;
+        for (int y = yCenter - radius; y < yCenter + radius; y++)
+        {
+            for (int x = xCenter - radius; x < xCenter + radius; x++)
+            {
+                if ((x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter) < radius * radius)
+                {
+                    var ptr = x * 4 + Bitmap.BackBuffer + Bitmap.BackBufferStride * y;
+                    *(int*)ptr = color;
+                }
+            }
+        }
     }
     public unsafe void DrawBottomTriangle(Int32Point basePoint, double delta1, double delta2, int triangleHeight, byte r, byte g, byte b)
     {
@@ -391,4 +355,15 @@ class Graphic
     {
         DrawRectangle(new Rectangle(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight), r, g, b);
     }
+}
+class Camera
+{
+    public Camera(double xOffset, double yOffset)
+    {
+        XOffset = xOffset;
+        YOffset = yOffset;
+    }
+
+    public double XOffset { get; }
+    public double YOffset { get; }
 }
