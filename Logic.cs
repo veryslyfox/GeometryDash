@@ -1,17 +1,26 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Windows.Input;
 class Player
 {
-    public Player(double x, double y, FloatRectangle hitbox, double move)
+    public Player(double x, double y, FloatRectangle hitbox, double move, Level level)
     {
         X = x;
         Y = y;
+        SpawnPositionX = x;
+        SpawnPositionY = y;
         Hitbox = hitbox;
         Move = move;
+        Level = level;
+        LastTickTime = Stopwatch.GetTimestamp();
     }
 
     public void KeyDown(object sender, KeyEventArgs args)
     {
+        if (Level.IsSleep)
+        {
+            return;
+        }
         if (args.Key != Key.Up)
         {
             return;
@@ -26,37 +35,56 @@ class Player
     }
     public void Kill()
     {
-        Hitbox = Hitbox.Move(-X, -Y);
-        X = 0;
-        Y = 0;
+        Level.RespawnTime = Stopwatch.GetTimestamp() + (RespawnTime * Stopwatch.Frequency) / 1000;
+        Level.IsSleep = true;
     }
+    public void Respawn()
+    {
+        Hitbox = Hitbox.Move(SpawnPositionX - X, SpawnPositionY - Y);
+        X = SpawnPositionX;
+        Y = SpawnPositionY;
+    }
+
     public void Tick()
     {
-        if (X > 800)
+        var now = Stopwatch.GetTimestamp();
+        var delay = (now - LastTickTime) * 100 / Stopwatch.Frequency;
+        LastTickTime = now;
+        if (Level.IsSleep)
         {
-            Speed = -Math.Abs(Speed);
+            return;
         }
-        if (X < 0)
-        {
-            Speed = Math.Abs(Speed);
-        }
-        Hitbox = Hitbox.Move(Speed, Move);
-        X += Speed;
+        // if (X > 800)
+        // {
+        //     Speed = -Math.Abs(Speed);
+        // }
+        // if (X < 0)
+        // {
+        //     Speed = Math.Abs(Speed);
+        // }
+        Hitbox = Hitbox.Move(Speed * delay, Move * delay);
+        X += Speed * delay;
         if (IsOnBlock)
         {
             Move = 0;
         }
-        Y += Move;
-        Move += Gravity;
+        Y += Move * delay;
+        Move += Gravity * delay;
     }
 
     public double X { get; set; }
     public double Y { get; set; }
+    public long LastTickTime;
+    public double SpawnPositionX;
+    public double SpawnPositionY;
+    public Level Level;
     public double Move { get; set; }
     //TEST_ME
     public double Speed { get; set; } = 3;
     //TEST_ME
     public double Gravity { get; set; } = 0;
+    //TEST_ME
+    public int RespawnTime = 1000;
     public FloatRectangle Hitbox { get; set; }
     public bool IsOnBlock { get; set; }
 }
@@ -66,9 +94,15 @@ class Level
     {
         Objects = objects;
         CollisionList = new BitArray(objects.Length);
+        RespawnTime = long.MaxValue;
     }
     public void Activate(Player player)
     {
+        UpdateSleep(player);
+        if (IsSleep)
+        {
+            return;
+        }
         var i = 0;
         foreach (var gameObject in Objects)
         {
@@ -97,7 +131,7 @@ class Level
             }
             else
             {
-                if(gameObject.Type == GameObjectType.Block && CollisionList[i])
+                if (gameObject.Type == GameObjectType.Block && CollisionList[i])
                 {
                     player.IsOnBlock = false;
                 }
@@ -105,8 +139,17 @@ class Level
             CollisionList[i] = isColliding;
             i++;
         }
-
     }
+    public void UpdateSleep(Player player)
+    {
+        if ((Stopwatch.GetTimestamp() > RespawnTime) & IsSleep)
+        {
+            player.Respawn();
+            IsSleep = false;
+        }
+    }
+    public bool IsSleep;
+    public long RespawnTime;
     public GameObject[] Objects { get; }
     public BitArray CollisionList;
 }

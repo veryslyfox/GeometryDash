@@ -77,14 +77,14 @@ struct Rectangle
         if (a2 <= b1)
         {
             return (0, 0);
-        }        
-        if(a1 <= b1 && a2 >= b2)
+        }
+        if (a1 <= b1 && a2 >= b2)
         {
             return (b1, b2);
         }
         return (b1, a2);
     }
-    
+
     enum IntersectionType
     {
         None,
@@ -264,8 +264,11 @@ class Graphic
             rowEnd += delta2;
         }
     }
-    public unsafe void DrawCircle(int xCenter, int yCenter, int radius, byte r, byte g, byte b)
+    public unsafe void DrawCircle(Circle circle, byte r, byte g, byte b)
     {
+        var xCenter = circle.XCenter;
+        var yCenter = circle.YCenter;
+        var radius = circle.Radius;
         var color = (r << 16) | (g << 8) | b;
         for (int y = yCenter - radius; y < yCenter + radius; y++)
         {
@@ -355,6 +358,29 @@ class Graphic
     {
         DrawRectangle(new Rectangle(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight), r, g, b);
     }
+    // public void DrawImageElement(ImageElement element)
+    // {
+    //     switch (element.ElementType)
+    //     {
+    //         case ImageElementType.Triangle:
+    //             DrawTriangle(element.Triangle, element.R, element.G, element.B);
+    //             break;
+    //         case ImageElementType.Circle:
+    //             DrawCircle(element.Circle, element.R, element.G, element.B);
+    //             break;
+    //         case ImageElementType.Rectangle:
+    //             DrawRectangle(element.Rectangle, element.R, element.G, element.B);
+    //             break;
+    //     }
+    //     throw new Exception("Don't use reflection for heck");
+    // }
+    // public void Draw(Image image)
+    // {
+    //     foreach (var item in image.Elements)
+    //     {
+    //         DrawImageElement(item);
+    //     }
+    // }
 }
 class Camera
 {
@@ -364,6 +390,19 @@ class Camera
         YOffset = yOffset;
     }
 
-    public double XOffset { get; }
-    public double YOffset { get; }
+    public double XOffset { get; set; }
+    public double YOffset { get; set; }
+}
+struct Circle
+{
+    public Circle(int xCenter, int yCenter, int radius)
+    {
+        XCenter = xCenter;
+        YCenter = yCenter;
+        Radius = radius;
+    }
+
+    public int XCenter { get; }
+    public int YCenter { get; }
+    public int Radius { get; }
 }
