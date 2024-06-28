@@ -36,11 +36,12 @@ public partial class MainWindow : Window
     private bool _isEditMode;
     public MainWindow()
     {
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 4000; i++)
         {
             _objects.Add(new GameObject(new(i * 100, _rng.Next(-100, 100), i * 100 + 100, _rng.Next(100, 300)), 255, 0, 0, GameObjectType.Danger));
             _objects.Add(new GameObject(new(i * 100, _rng.Next(700, 900), i * 100 + 100, _rng.Next(900, 1100)), 255, 0, 0, GameObjectType.Danger));
         }
+        
         _level = new Level(_objects.ToArray());
         InitializeComponent();
         _timer.Interval = TimeSpan.FromSeconds(0.000001);
@@ -103,27 +104,37 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
+        var noise = new Sprite(new int[100, 100]);
+        for (int y = 0; y < 100; y++)
+        {
+            for (int x = 0; x < 100; x++)
+            {
+                noise[x, y] = _rng.Next(_f * 1000);   
+            }
+        }
         _camera.XOffset += _cameraMove.X;
         _camera.YOffset += _cameraMove.Y;
+        _player.Angle = 2;
         if (!_isEditMode)
         {
             _camera = new(_player.X - 350, _player.Y - 350);
             _level.Activate(_player);
             _player.Tick();
         }
-        _graphic.SafeDrawRectangle((Rectangle)_player.Hitbox.Move(-_camera.XOffset, -_camera.YOffset), 255, (byte)(_level.IsSleep ? 0 : 255), 255);
+        var time = Stopwatch.GetTimestamp();
+        var diff = time - _startTime;
+        _camera = new(_player.X - 350, _player.Y - 350);
+        _graphic.DrawSprite(noise, ((Rectangle)_player.Hitbox.Move(-_camera.XOffset, -_camera.YOffset)).X1, ((Rectangle)_player.Hitbox.Move(-_camera.XOffset, -_camera.YOffset)).Y1);
         foreach (var obj in _objects)
         {
             _graphic.SafeDrawRectangle((Rectangle)obj.Rectangle.Move(-_camera.XOffset, -_camera.YOffset), obj.R, obj.G, obj.B);
         }
-        var time = Stopwatch.GetTimestamp();
-        var diff = time - _startTime;
         if (diff > Stopwatch.Frequency)
         {
             var seconds = (double)diff / Stopwatch.Frequency;
             //using var fpsWriter = new StreamWriter(File.Open("fps.txt", FileMode.Create));
             //fpsWriter.WriteLine(_f / seconds);
-            this.Title = $"FPS: {Math.Round(_f / seconds)} delay:{(Stopwatch.GetTimestamp() - _player.LastTickTime) / Stopwatch.Frequency}";
+            this.Title = $"FPS: {Math.Round(_f / seconds)} delay:{(Stopwatch.GetTimestamp() - _player.LastTickTime) / Stopwatch.Frequency} x: {_player.X} y: {_player.Y}";
             _startTime = time;
             _f = 0;
         }

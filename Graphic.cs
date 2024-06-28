@@ -60,7 +60,7 @@ struct Rectangle
     public int Y2 { get; set; }
     public static explicit operator Rectangle(FloatRectangle rectangle)
     {
-        return new((int)rectangle.X1, (int)rectangle.Y1, (int)rectangle.X2, (int)rectangle.Y2);
+        return new((int)Math.Round(rectangle.X1), (int)Math.Round(rectangle.Y1), (int)Math.Round(rectangle.X2), (int)Math.Round(rectangle.Y2));
     }
     public static Rectangle operator &(Rectangle left, Rectangle right)
     {
@@ -213,32 +213,50 @@ struct FloatRectangle
     {
         return ((left.X1 < right.X2) == (left.X1 > right.X2)) & ((left.Y1 < right.Y2) == (left.Y2 > right.Y1));
     }
+    public static bool operator ==(FloatRectangle a, FloatRectangle b)
+    {
+        return (a.X1 == b.X1) && (a.X2 == b.X2) && (a.Y1 == b.Y1) && (a.Y2 == b.Y2);
+    }
+    public static bool operator != (FloatRectangle a, FloatRectangle b)
+    {
+        return !(a == b);
+    }
+    public double GetArea()
+    {
+        return (X2 - X1) * (Y2 - Y1);
+    }
 }
 class Graphic
 {
     public Graphic(WriteableBitmap bitmap)
     {
         Bitmap = bitmap;
+        _backBuffer = bitmap.BackBuffer;
+        _backBufferStride = bitmap.BackBufferStride;
     }
     public WriteableBitmap Bitmap { get; }
+    private readonly nint _backBuffer;
+    private readonly int _backBufferStride;
     public unsafe void DrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
     {
         var color = (r << 16) | (g << 8) | b;
+        var rowStart = _backBuffer + _backBufferStride * rectangle.Y1;
         for (int y = rectangle.Y1; y < rectangle.Y2; y++)
         {
-            for (int* ptr = (int*)(Bitmap.BackBuffer + Bitmap.BackBufferStride * y) + rectangle.X1, eptr = ptr - rectangle.X1 + rectangle.X2;
+            for (int* ptr = (int*)rowStart + rectangle.X1, eptr = ptr - rectangle.X1 + rectangle.X2;
              ptr != eptr;
               ++ptr)
             {
                 *ptr = color;
             }
+            rowStart += _backBufferStride;
         }
     }
     public void SafeDrawRectangle(Rectangle rectangle, byte r, byte g, byte b)
     {
         var bitmapRectangle = new Rectangle(0, 0, Bitmap.PixelWidth, Bitmap.PixelHeight);
         var newRectangle = rectangle & bitmapRectangle;
-        if (newRectangle == null)
+        if (newRectangle.X1 == 0 && newRectangle.X2 == 0 && newRectangle.Y1 == 0 && newRectangle.Y2 == 0)
         {
             return;
         }
@@ -262,6 +280,24 @@ class Graphic
             }
             rowStart += delta1;
             rowEnd += delta2;
+        }
+    }
+    public unsafe void SafeDrawCircle(Circle circle, byte r, byte g, byte b)
+    {
+        var xCenter = circle.XCenter;
+        var yCenter = circle.YCenter;
+        var radius = circle.Radius;
+        var color = (r << 16) | (g << 8) | b;
+        for (int y = Math.Max(yCenter - radius, 0); y < Math.Min(yCenter + radius, Bitmap.Height); y++)
+        {
+            for (int x = Math.Max(xCenter - radius, 0); x < Math.Min(xCenter + radius, Bitmap.Width); x++)
+            {
+                if ((x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter) < radius * radius)
+                {
+                    var ptr = x * 4 + Bitmap.BackBuffer + Bitmap.BackBufferStride * y;
+                    *(int*)ptr = color;
+                }
+            }
         }
     }
     public unsafe void DrawCircle(Circle circle, byte r, byte g, byte b)
@@ -302,6 +338,8 @@ class Graphic
             }
             rowStart += delta1;
             rowEnd += delta2;
+            rowStart = Math.Max(0, rowStart);
+            rowEnd = Math.Min(Bitmap.Width, rowEnd);
         }
     }
     public unsafe void DrawTriangle(Triangle triangle, byte r, byte g, byte b)
@@ -381,6 +419,20 @@ class Graphic
     //         DrawImageElement(item);
     //     }
     // }
+    public unsafe void DrawSprite(Sprite sprite, int x, int y)
+    {
+        var rowStart = _backBuffer + _backBufferStride * y;
+        for (int row = y; row < y + sprite.Y; row++)
+        {
+            for (int column = x; column < x + sprite.X; column++)
+            {
+                var ptr = column * 4 + rowStart;
+                *(int*)ptr = sprite[column - x, row - y];
+            }
+            
+            rowStart += _backBufferStride;
+        }
+    }
 }
 class Camera
 {
@@ -392,6 +444,7 @@ class Camera
 
     public double XOffset { get; set; }
     public double YOffset { get; set; }
+
 }
 struct Circle
 {

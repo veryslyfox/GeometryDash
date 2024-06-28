@@ -21,17 +21,20 @@ class Player
         {
             return;
         }
-        if (args.Key != Key.Up)
+        if (args.Key != Key.Up && args.Key != Key.Space)
         {
             return;
         }
-        Move = -3;
+        Move = -Speed * Angle;
         IsOnBlock = false;
     }
     internal void KeyUp(object sender, KeyEventArgs args)
     {
-        Move = 3;
-        return;
+        if (args.Key != Key.Up && args.Key != Key.Space)
+        {
+            return;
+        }
+        Move = Speed * Angle;
     }
     public void Kill()
     {
@@ -48,20 +51,12 @@ class Player
     public void Tick()
     {
         var now = Stopwatch.GetTimestamp();
-        var delay = (now - LastTickTime) * 100 / Stopwatch.Frequency;
+        var delay = (((double)(now - LastTickTime) * 200 / Stopwatch.Frequency));
         LastTickTime = now;
         if (Level.IsSleep)
         {
             return;
         }
-        // if (X > 800)
-        // {
-        //     Speed = -Math.Abs(Speed);
-        // }
-        // if (X < 0)
-        // {
-        //     Speed = Math.Abs(Speed);
-        // }
         Hitbox = Hitbox.Move(Speed * delay, Move * delay);
         X += Speed * delay;
         if (IsOnBlock)
@@ -80,10 +75,11 @@ class Player
     public Level Level;
     public double Move { get; set; }
     //TEST_ME
-    public double Speed { get; set; } = 3;
+    public double Speed { get; set; } = 1;
     //TEST_ME
     public double Gravity { get; set; } = 0;
     //TEST_ME
+    public double Angle = 0;
     public int RespawnTime = 1000;
     public FloatRectangle Hitbox { get; set; }
     public bool IsOnBlock { get; set; }
