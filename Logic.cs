@@ -75,7 +75,7 @@ class Player
     public Level Level;
     public double Move { get; set; }
     //TEST_ME
-    public double Speed { get; set; } = 1;
+    public double Speed { get; set; }
     //TEST_ME
     public double Gravity { get; set; } = 0;
     //TEST_ME

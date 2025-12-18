@@ -34,15 +34,16 @@ public partial class MainWindow : Window
     private Camera _camera = new(0, 0);
     private Vector _cameraMove = new Vector(0, 0);
     private bool _isEditMode;
+    private Tree _tree;
     public MainWindow()
     {
-        for (int i = 0; i < 4000; i++)
+        for (int i = 0; i < 1000; i++)
         {
-            _objects.Add(new GameObject(new(i * 100, _rng.Next(-100, 100), i * 100 + 100, _rng.Next(100, 300)), 255, 0, 0, GameObjectType.Danger));
-            _objects.Add(new GameObject(new(i * 100, _rng.Next(700, 900), i * 100 + 100, _rng.Next(900, 1100)), 255, 0, 0, GameObjectType.Danger));
+            _objects.Add(new GameObject(new(i * 100, _rng.Next(-100, 400), i * 100 + 100, _rng.Next(100, 300)), 255, 0, 0, GameObjectType.Danger));
+            _objects.Add(new GameObject(new(i * 100, _rng.Next(600, 900), i * 100 + 100, _rng.Next(900, 1100)), 255, 0, 0, GameObjectType.Danger));
         }
-        
         _level = new Level(_objects.ToArray());
+        _tree = Tree.Create(_level);
         InitializeComponent();
         _timer.Interval = TimeSpan.FromSeconds(0.000001);
         _bitmap = new WriteableBitmap(1000, 1000, 96, 96, PixelFormats.Bgr32, null);
@@ -52,6 +53,8 @@ public partial class MainWindow : Window
         _startTime = Stopwatch.GetTimestamp();
         _timer.Tick += Tick;
         _timer.Start();
+        _player.Angle = 3;
+        _player.Speed = 1;
         KeyDown += _player.KeyDown;
         KeyUp += _player.KeyUp;
         KeyDown += KeyDownHandler;
@@ -104,6 +107,7 @@ public partial class MainWindow : Window
     {
         _bitmap.Lock();
         _graphic.Clear();
+
         var noise = new Sprite(new int[100, 100]);
         for (int y = 0; y < 100; y++)
         {
@@ -114,7 +118,6 @@ public partial class MainWindow : Window
         }
         _camera.XOffset += _cameraMove.X;
         _camera.YOffset += _cameraMove.Y;
-        _player.Angle = 2;
         if (!_isEditMode)
         {
             _camera = new(_player.X - 350, _player.Y - 350);

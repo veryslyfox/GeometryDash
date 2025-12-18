@@ -1,12 +1,24 @@
 using System.Collections.Generic;
 class Tree
 {
-    public Tree Create(Level level)
+    public static Tree Create(Level level)
     {
+        int[] Sequence(int length)
+        {
+            var result = new int[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = i;
+            }
+            return result;
+        }
+        var acc = new RectAccumulator();
         foreach (var obj in level.Objects)
         {
-            obj.Rectangle
+            acc.Add(obj.Rectangle);            
         }
+        var bounds = CutVertical(acc.Result);
+        return new(level, Sequence(level.Objects.Length), bounds.Item1, bounds.Item2);
     }
     Tree(Level level, IEnumerable<int> indexes, FloatRectangle boundsLeft, FloatRectangle boundsRight)
     {

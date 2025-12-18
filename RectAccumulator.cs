@@ -4,10 +4,10 @@ class RectAccumulator
     {
 
     }
-    public void Add(Rectangle rectangle)
+    public void Add(FloatRectangle rectangle)
     {
-        Result.X1 = Math.Min(Result.X1, rectangle.X1);
+        Result = new(Math.Min(rectangle.X1, Result.X1), Math.Min(rectangle.Y1, Result.Y1), Math.Max(rectangle.X2, Result.X2), Math.Max(rectangle.Y2, Result.Y2));
     
     }
-    public Rectangle Result { get; set; }
+    public FloatRectangle Result { get; set; }
 }
